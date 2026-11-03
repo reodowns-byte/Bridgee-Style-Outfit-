@@ -196,6 +196,8 @@ function applyStorefrontImage(key,url){
   if(slot.kind==='background') el.style.backgroundImage=`linear-gradient(90deg,rgba(0,0,0,.02),transparent),url("${url}")`;
   else el.src=url;
   storefrontImageValues[key]=url;
+  const preview=document.getElementById('preview-'+key);
+  if(preview) preview.src=url;
 }
 async function loadStorefrontImages(){
   if(!supabase)return;
@@ -216,21 +218,34 @@ window.saveStorefrontImage=async function(key){
   const input=document.getElementById('file-'+key),file=input?.files?.[0];
   if(!file){if(status)status.textContent='Choose an image first.';return;}
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){if(status)status.textContent='Use JPG, PNG or WebP images under 5 MB.';return;}
-  status.textContent='Uploading image…';
+  const button=input?.parentElement?.querySelector('button');
+  if(button){button.disabled=true;button.textContent='Uploading…';}
+  status.textContent='Uploading image to storage…';
   try{
     const ext=file.name.split('.').pop().toLowerCase();
     const storagePath=`storefront/${key}-${crypto.randomUUID()}.${ext}`;
-    const {error:uploadError}=await supabase.storage.from('product-images').upload(storagePath,file,{cacheControl:'3600',upsert:false});
-    if(uploadError)throw uploadError;
+    const {error:uploadError}=await supabase.storage.from('product-images').upload(storagePath,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+    if(uploadError)throw new Error('Image upload failed: '+uploadError.message);
     const {data:publicData}=supabase.storage.from('product-images').getPublicUrl(storagePath);
-    const imageUrl=publicData.publicUrl;
-    const {error:saveError}=await supabase.from('storefront_images').upsert({slot:key,image_url:imageUrl,updated_at:new Date().toISOString()},{onConflict:'slot'});
-    if(saveError)throw saveError;
+    const imageUrl=publicData?.publicUrl;
+    if(!imageUrl)throw new Error('The image uploaded, but Supabase did not return a public image URL.');
+    status.textContent='Image uploaded. Publishing it to the homepage…';
+    const {error:saveError}=await supabase.from('storefront_images').upsert({
+      slot:key,
+      image_url:imageUrl,
+      updated_at:new Date().toISOString(),
+      updated_by:currentUser.id
+    },{onConflict:'slot'});
+    if(saveError)throw new Error('Image uploaded, but saving its homepage setting failed: '+saveError.message);
     applyStorefrontImage(key,imageUrl);
-    const preview=document.getElementById('preview-'+key);if(preview)preview.src=imageUrl;
-    status.textContent='Image saved and published on the storefront.';
+    status.textContent='Success! The '+(storefrontImageSlots.find(x=>x.key===key)?.label||'homepage image')+' is now published. Refresh the public homepage to see it.';
     input.value='';
-  }catch(err){status.textContent=err.message||'Could not save this image.';}
+  }catch(err){
+    console.error('Homepage image save failed:',err);
+    status.textContent=err.message||'Could not save this image. Please try again.';
+  }finally{
+    if(button){button.disabled=false;button.textContent='Upload & save image';}
+  }
 };
 const originalOpenAdmin=window.openAdmin;
 window.openAdmin=()=>{
