@@ -70,10 +70,10 @@ function toggleMobileMenu(){const nav=document.querySelector('.nav');const open=
 renderProducts();updateCart();
 </script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Add your Supabase project URL and anon/public key here after creating the project.
-// The anon key is designed for browser use; NEVER put a service-role or secret key here.
-window.ELAN_SUPABASE_URL = window.ELAN_SUPABASE_URL || 'YOUR_SUPABASE_PROJECT_URL';
-window.ELAN_SUPABASE_ANON_KEY = window.ELAN_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+// ÉLAN AFRIQUE Supabase connection. The URL must be the project root (not /rest/v1).
+// The publishable key is intended for browser use; NEVER put a secret/service-role key here.
+window.ELAN_SUPABASE_URL = 'https://ttfsgopllrrqmfignkvj.supabase.co';
+window.ELAN_SUPABASE_ANON_KEY = 'sb_publishable_JnvwWgnvGQ8jwOXidIsdhA_uxWfO9lI';
 </script>
 <script type="module">
 const configured = window.ELAN_SUPABASE_URL.startsWith('https://') && !window.ELAN_SUPABASE_URL.includes('YOUR_') && window.ELAN_SUPABASE_ANON_KEY && !window.ELAN_SUPABASE_ANON_KEY.includes('YOUR_');
